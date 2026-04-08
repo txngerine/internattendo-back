@@ -8,6 +8,21 @@ const allowedAccessStatuses = new Set(["pending", "approved", "disabled"]);
 const allowedAttendanceStatuses = new Set(["Present", "Late", "Leave", "Early Leave"]);
 const IST_OFFSET_MINUTES = 5 * 60 + 30;
 
+function formatExportTimeIst(value) {
+  if (!value) return "";
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+
+  return parsed.toLocaleTimeString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+}
+
 function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
 }
@@ -381,8 +396,8 @@ router.get("/export", async (req, res) => {
         name: row.profiles.full_name,
         email: row.profiles.email,
         date: row.attendance_date,
-        login: row.login_time || "",
-        logout: row.logout_time || "",
+        login: formatExportTimeIst(row.login_time),
+        logout: formatExportTimeIst(row.logout_time),
         status: row.status,
         work: row.work_description || "",
         location: `${row.location_lat || ""}, ${row.location_lon || ""}`,
@@ -411,8 +426,8 @@ router.get("/export", async (req, res) => {
       row.profiles.full_name,
       row.profiles.email,
       row.attendance_date,
-      row.login_time || "",
-      row.logout_time || "",
+      formatExportTimeIst(row.login_time),
+      formatExportTimeIst(row.logout_time),
       row.status,
       row.work_description || "",
       `${row.location_lat || ""}, ${row.location_lon || ""}`,
