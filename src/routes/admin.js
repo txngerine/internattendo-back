@@ -327,9 +327,35 @@ router.patch("/attendance/:recordId", async (req, res) => {
   const { recordId } = req.params;
   const status = String(req.body?.status || "").trim();
   const workDescription = String(req.body?.workDescription || "").trim();
+  const loginTimeRaw = String(req.body?.loginTime || "").trim();
+  const logoutTimeRaw = String(req.body?.logoutTime || "").trim();
 
   if (!allowedAttendanceStatuses.has(status)) {
     return res.status(400).json({ message: "Invalid attendance status" });
+  }
+
+  const { data: existingRecord, error: existingRecordError } = await supabaseAdmin
+    .from("attendance")
+    .select("id,attendance_date")
+    .eq("id", recordId)
+    .maybeSingle();
+
+  if (existingRecordError) return res.status(500).json({ message: existingRecordError.message });
+  if (!existingRecord) return res.status(404).json({ message: "Attendance record not found" });
+
+  const loginTime = loginTimeRaw
+    ? combineDateAndTimeIso(existingRecord.attendance_date, loginTimeRaw)
+    : null;
+  const logoutTime = logoutTimeRaw
+    ? combineDateAndTimeIso(existingRecord.attendance_date, logoutTimeRaw)
+    : null;
+
+  if (loginTimeRaw && !loginTime) {
+    return res.status(400).json({ message: "Invalid login time" });
+  }
+
+  if (logoutTimeRaw && !logoutTime) {
+    return res.status(400).json({ message: "Invalid logout time" });
   }
 
   const { data, error } = await supabaseAdmin
@@ -337,6 +363,8 @@ router.patch("/attendance/:recordId", async (req, res) => {
     .update({
       status,
       work_description: workDescription,
+      login_time: loginTime,
+      logout_time: logoutTime,
     })
     .eq("id", recordId)
     .select(
@@ -345,7 +373,6 @@ router.patch("/attendance/:recordId", async (req, res) => {
     .maybeSingle();
 
   if (error) return res.status(500).json({ message: error.message });
-  if (!data) return res.status(404).json({ message: "Attendance record not found" });
 
   res.json({ record: data, message: "Attendance record updated." });
 });
