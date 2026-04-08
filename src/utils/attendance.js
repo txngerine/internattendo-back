@@ -1,19 +1,40 @@
 const OFFICE_HOUR_START = 9;
-const OFFICE_MINUTE_START = 40;
+const OFFICE_MINUTE_START = 30;
 const OFFICE_HOUR_END = 17;
 const OFFICE_MINUTE_END = 0;
+const INDIA_TIMEZONE = "Asia/Kolkata";
+
+function getIndiaDateParts(date) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: INDIA_TIMEZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+
+  return {
+    year: Number(map.year),
+    month: Number(map.month),
+    day: Number(map.day),
+    hour: Number(map.hour),
+    minute: Number(map.minute),
+  };
+}
 
 export function getAttendanceStatusForLogin(loginDate) {
-  const hours = loginDate.getUTCHours();
-  const minutes = loginDate.getUTCMinutes();
+  const { hour: hours, minute: minutes } = getIndiaDateParts(loginDate);
   const currentMinutes = hours * 60 + minutes;
   const thresholdMinutes = OFFICE_HOUR_START * 60 + OFFICE_MINUTE_START;
   return currentMinutes <= thresholdMinutes ? "Present" : "Late";
 }
 
 export function isEarlyLogout(logoutDate) {
-  const hours = logoutDate.getUTCHours();
-  const minutes = logoutDate.getUTCMinutes();
+  const { hour: hours, minute: minutes } = getIndiaDateParts(logoutDate);
   const currentMinutes = hours * 60 + minutes;
   const thresholdMinutes = OFFICE_HOUR_END * 60 + OFFICE_MINUTE_END;
   return currentMinutes < thresholdMinutes;
@@ -36,10 +57,10 @@ export function isWithinGeofence(lat1, lon1, lat2, lon2, radiusMeters) {
 }
 
 export function getDateKey(date) {
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(date.getUTCDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  const { year, month, day } = getIndiaDateParts(date);
+  const monthValue = String(month).padStart(2, "0");
+  const dayValue = String(day).padStart(2, "0");
+  return `${year}-${monthValue}-${dayValue}`;
 }
 
 export function isValidLatitude(value) {

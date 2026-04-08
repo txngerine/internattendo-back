@@ -25,6 +25,7 @@ router.post("/register", async (req, res) => {
     email,
     full_name: fullName,
     role: "Intern",
+    access_status: "pending",
   });
 
   if (profileError) {
@@ -32,7 +33,7 @@ router.post("/register", async (req, res) => {
     return res.status(400).json({ message: profileError.message });
   }
 
-  return res.status(201).json({ message: "Account created successfully. Please login." });
+  return res.status(201).json({ message: "Account created. An admin must approve your login access." });
 });
 
 export default router;

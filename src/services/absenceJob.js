@@ -10,7 +10,11 @@ export async function runAbsenceMarking() {
     if (now.getUTCHours() !== targetHour || now.getUTCMinutes() !== targetMinute) return;
 
     const dateKey = getDateKey(now);
-    const { data: interns } = await supabaseAdmin.from("profiles").select("id").eq("role", "Intern");
+    const { data: interns } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("role", "Intern")
+      .eq("access_status", "approved");
     const { data: attendance } = await supabaseAdmin
       .from("attendance")
       .select("user_id")
