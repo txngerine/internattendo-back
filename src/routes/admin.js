@@ -1,10 +1,12 @@
 import express from "express";
 import ExcelJS from "exceljs";
 import { supabaseAdmin } from "../config/supabase.js";
+import { getDateKey } from "../utils/attendance.js";
 
 const router = express.Router();
 const allowedAccessStatuses = new Set(["pending", "approved", "disabled"]);
 const allowedAttendanceStatuses = new Set(["Present", "Late", "Leave", "Early Leave"]);
+const IST_OFFSET_MINUTES = 5 * 60 + 30;
 
 function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
@@ -31,7 +33,36 @@ function combineDateAndTimeIso(dateValue, timeValue) {
   const timeText = String(timeValue || "").trim();
   if (!dateText || !timeText) return null;
 
-  const composed = new Date(`${dateText}T${timeText}:00`);
+  const dateMatch = dateText.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const timeMatch = timeText.match(/^(\d{2}):(\d{2})$/);
+  if (!dateMatch || !timeMatch) return null;
+
+  const year = Number(dateMatch[1]);
+  const month = Number(dateMatch[2]);
+  const day = Number(dateMatch[3]);
+  const hours = Number(timeMatch[1]);
+  const minutes = Number(timeMatch[2]);
+
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(month) ||
+    !Number.isInteger(day) ||
+    !Number.isInteger(hours) ||
+    !Number.isInteger(minutes) ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31 ||
+    hours < 0 ||
+    hours > 23 ||
+    minutes < 0 ||
+    minutes > 59
+  ) {
+    return null;
+  }
+
+  const utcMillis = Date.UTC(year, month - 1, day, hours, minutes) - IST_OFFSET_MINUTES * 60 * 1000;
+  const composed = new Date(utcMillis);
   if (Number.isNaN(composed.getTime())) return null;
   return composed.toISOString();
 }
@@ -180,7 +211,7 @@ router.delete("/interns/:internId", async (req, res) => {
 });
 
 router.get("/stats", async (_req, res) => {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getDateKey(new Date());
   const [{ count: totalInterns }, { data: records }] = await Promise.all([
     supabaseAdmin.from("profiles").select("*", { count: "exact", head: true }).eq("role", "Intern"),
     supabaseAdmin
