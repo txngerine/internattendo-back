@@ -1,7 +1,7 @@
 const OFFICE_HOUR_START = 9;
 const OFFICE_MINUTE_START = 30;
-const OFFICE_HOUR_END = 17;
-const OFFICE_MINUTE_END = 0;
+const OFFICE_HOUR_END = 16;
+const OFFICE_MINUTE_END = 30;
 const INDIA_TIMEZONE = "Asia/Kolkata";
 
 function getIndiaDateParts(date) {
