@@ -2,14 +2,22 @@ import { supabaseAdmin } from "../config/supabase.js";
 import { getDateKey } from "../utils/attendance.js";
 
 export async function runAbsenceMarking() {
-  const targetHour = Number(process.env.ABSENCE_MARK_TIME_HOUR || 18);
-  const targetMinute = Number(process.env.ABSENCE_MARK_TIME_MINUTE || 0);
+  // Run at 9:45 and 16:33 (4:33pm)
+  const targetTimes = [
+    { hour: 9, minute: 45 },
+    { hour: 16, minute: 33 },
+  ];
 
   setInterval(async () => {
     const now = new Date();
-    if (now.getUTCHours() !== targetHour || now.getUTCMinutes() !== targetMinute) return;
+    // Convert now to Asia/Kolkata timezone
+    const indiaTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+    const currentHour = indiaTime.getHours();
+    const currentMinute = indiaTime.getMinutes();
+    const shouldRun = targetTimes.some(t => t.hour === currentHour && t.minute === currentMinute);
+    if (!shouldRun) return;
 
-    const dateKey = getDateKey(now);
+    const dateKey = getDateKey(indiaTime);
     const { data: interns } = await supabaseAdmin
       .from("profiles")
       .select("id")

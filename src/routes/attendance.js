@@ -90,6 +90,14 @@ router.post("/check-out", async (req, res) => {
   if (!attendance) return res.status(404).json({ message: "No check-in found for today" });
   if (attendance.logout_time) return res.status(409).json({ message: "Already checked out" });
 
+  // Enforce 1 hour minimum between check-in and check-out
+  if (attendance.login_time) {
+    const loginTime = new Date(attendance.login_time);
+    if (now - loginTime < 60 * 60 * 1000) {
+      return res.status(400).json({ message: "You can only check out after 1 hour from check-in." });
+    }
+  }
+
   const early = isEarlyLogout(now);
   let nextStatus = attendance.status;
   if (attendance.status !== "Leave" && early) nextStatus = "Early Leave";
